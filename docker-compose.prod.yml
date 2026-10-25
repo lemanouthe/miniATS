@@ -1,0 +1,41 @@
+# Production sur le serveur partagé (derrière nginx-proxy + acme-companion).
+# Lancement : docker compose -f docker-compose.prod.yml up -d   (voir deploy/deploy.sh)
+#
+# Règles de cohabitation :
+# - nom de projet épinglé : ressources préfixées mini-ats-* / mini-ats_* ;
+# - aucun port publié sur l'hôte : nginx-proxy joint le conteneur par le réseau `net` ;
+# - pas de Postgres ici : on utilise celui déjà présent sur le serveur (DATABASE_URL dans .env).
+name: mini-ats
+
+services:
+  mini-ats-api:
+    # Nom de service volontairement unique : sur le réseau partagé `net`, il devient un alias DNS.
+    container_name: mini-ats-api
+    image: ${IMAGE:?IMAGE manquant dans .env}
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DJANGO_DEBUG: "0"
+      DJANGO_ALLOWED_HOSTS: ${DOMAIN:?DOMAIN manquant dans .env}
+      CSRF_TRUSTED_ORIGINS: https://${DOMAIN}
+      # Déclaration auprès de nginx-proxy / acme-companion.
+      VIRTUAL_HOST: ${DOMAIN}
+      VIRTUAL_PORT: "8000"
+      LETSENCRYPT_HOST: ${DOMAIN}
+      LETSENCRYPT_EMAIL: ${LETSENCRYPT_EMAIL:?LETSENCRYPT_EMAIL manquant dans .env}
+    volumes:
+      - ./media:/app/media
+    extra_hosts:
+      # Permet DATABASE_URL=...@host.docker.internal:5432/... si Postgres écoute sur l'hôte.
+      - "host.docker.internal:host-gateway"
+    networks:
+      - net
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  net:
+    external: true
