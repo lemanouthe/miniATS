@@ -62,5 +62,7 @@ GUNICORN_WORKERS=3
 SEED_DEMO=1
 EOF
 
-chmod 600 .env
+# Pas de chmod 600 ici : scp-action tourne dans son propre conteneur, avec un autre utilisateur,
+# et ne pourrait plus lire le fichier. Les droits 600 sont posés sur le serveur, juste après la
+# copie (étape ssh-action), et le .env est supprimé du runner en fin de job.
 echo "✓ .env généré ($(wc -l < .env) lignes)"
