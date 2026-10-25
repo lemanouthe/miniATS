@@ -14,8 +14,19 @@ set -e
 
 for secret in DJANGO_SECRET_KEY POSTGRES_PASSWORD; do
     value="${!secret}"
+    # Espaces et retours à la ligne en début/fin : souvent ajoutés par un copier-coller dans GitHub.
+    value="${value#"${value%%[![:space:]]*}"}"
+    value="${value%"${value##*[![:space:]]}"}"
+    printf -v "$secret" '%s' "$value"
+
     [ -n "$value" ] || { echo "✗ $secret manquant (secret GitHub)" >&2; exit 1; }
-    [[ "$value" =~ ^[A-Za-z0-9_-]+$ ]] || { echo "✗ $secret contient des caractères interdits (seuls A-Z a-z 0-9 _ -)" >&2; exit 1; }
+    if ! [[ "$value" =~ ^[A-Za-z0-9_-]+$ ]]; then
+        # Diagnostic sans jamais afficher le secret : longueur et nombre de caractères interdits.
+        bad="$(printf '%s' "$value" | LC_ALL=C tr -d 'A-Za-z0-9_-' | wc -c | tr -d ' ')"
+        echo "✗ $secret contient $bad caractère(s) interdit(s) sur ${#value} (seuls A-Z a-z 0-9 _ -)." >&2
+        echo "  Regénérer : python3 -c \"import secrets; print(secrets.token_urlsafe(64))\"" >&2
+        exit 1
+    fi
 done
 
 cat > .env <<EOF
