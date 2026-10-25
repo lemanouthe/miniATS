@@ -9,7 +9,7 @@ NPM     := cd frontend && npm
 
 .DEFAULT_GOAL := help
 .PHONY: help install install-back install-front env \
-        migrate migrations seed superuser shell \
+        migrate migrations seed superuser shell config \
         back front dev \
         test test-back test-front lint build ci \
         up down logs docker-test prod-build prod-run prod-stop clean
@@ -47,6 +47,9 @@ superuser: ## Crée un compte administrateur
 
 shell: ## Ouvre un shell Django
 	$(MANAGE) shell
+
+config: ## Affiche les variables d'environnement, leur source et leur valeur effective
+	$(MANAGE) showconfig
 
 # --- Développement --------------------------------------------------------
 

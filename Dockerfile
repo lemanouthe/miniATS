@@ -39,9 +39,10 @@ RUN DJANGO_SECRET_KEY=build-only DATABASE_URL=sqlite:////tmp/build.sqlite3 \
     && chmod +x /entrypoint.sh
 
 USER app
+# Port par défaut ; en production, PORT est fixé dans docker-compose.prod.yml (= VIRTUAL_PORT).
 EXPOSE 8000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health/', timeout=4)" || exit 1
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:${PORT}/api/health/', timeout=4)" || exit 1
 
 ENTRYPOINT ["/entrypoint.sh"]

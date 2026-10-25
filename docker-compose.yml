@@ -1,5 +1,9 @@
 # L'API utilise le Postgres déjà lancé sur la machine (port 5432),
 # configuré via DATABASE_URL dans backend/.env (voir backend/.env.example).
+# Nom distinct de la production (`mini-ats`) : sinon le --remove-orphans de deploy/deploy.sh
+# supprimerait les conteneurs de développement, et inversement.
+name: mini-ats-dev
+
 services:
   api:
     build: ./backend

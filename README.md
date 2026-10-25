@@ -46,9 +46,36 @@ L'admin Django est sur http://localhost:8000/admin/ (créer un compte avec `dock
 
 En production, **une seule image Docker** ([Dockerfile](Dockerfile) à la racine) contient l'API, l'admin et le front React buildé. Gunicorn sert le tout sur un même domaine (pas de CORS), WhiteNoise sert les fichiers statiques, et le conteneur se place derrière le nginx-proxy du serveur partagé, sans publier de port.
 
-- Push sur `main` : tests, puis image publiée sur GHCR, puis déploiement par SSH avec vérifications préalables (`deploy/precheck.sh`) et attente du healthcheck (`/api/health/`).
+- Push sur `main` : tests, puis image publiée sur GHCR, puis `.env` de production généré depuis les secrets GitHub, puis déploiement par SSH avec vérifications préalables (`deploy/precheck.sh`) et attente du healthcheck (`/api/health/`).
 - Tester l'image de production en local : `make prod-run`, puis http://localhost:8001.
 - Procédure complète (mise en place du serveur, secrets, retour arrière, règles de cohabitation) : [deploy/README.md](deploy/README.md).
+
+## Variables d'environnement
+
+Toute la configuration passe par des variables d'environnement, lues à un seul endroit :
+[backend/config/settings.py](backend/config/settings.py), avec les fonctions typées de
+[backend/config/env.py](backend/config/env.py) (`env_bool`, `env_list`, `env_pair`, `env_database`).
+
+| | Développement | Production |
+|---|---|---|
+| Fichier | `backend/.env` (modèle commenté : [backend/.env.example](backend/.env.example)) | `.env` du serveur, généré par [deploy/setup_env_prod.sh](deploy/setup_env_prod.sh) dans la CI |
+| Lu par | Django au démarrage (`python-dotenv`) | Docker Compose (`env_file`), qui le passe au conteneur |
+| Base | `DATABASE_URL` | `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_HOST`, `POSTGRES_PORT` |
+| Secrets | dans le fichier local (ignoré par git) | secrets GitHub `DJANGO_SECRET_KEY` et `POSTGRES_PASSWORD` |
+
+Ordre de priorité : une variable déjà présente dans l'environnement (CI, docker-compose) l'emporte
+sur le `.env`, puis sur la valeur par défaut de `settings.py`. Les booléens acceptent
+`True`/`False` ou `1`/`0`, et une faute de frappe empêche Django de démarrer au lieu de passer
+inaperçue.
+
+Pour voir ce que Django utilise réellement, avec la source de chaque valeur et les secrets masqués :
+
+```bash
+make config                     # en local
+docker compose -f docker-compose.prod.yml exec mini-ats-api python manage.py showconfig   # sur le serveur
+```
+
+La commande signale aussi les variables du `.env` que le projet n'utilise pas, souvent une faute de frappe.
 
 ## Fonctionnalités
 

@@ -16,18 +16,20 @@ warn() { printf '  \033[33m!\033[0m %s\n' "$1"; }
 echo "Precheck $PROJECT"
 
 # --- Fichiers du projet ---
-if [ -f .env ]; then ok ".env présent"; else fail ".env absent (copier deploy/.env.prod.example)"; fi
+if [ -f .env ]; then ok ".env présent"; else fail ".env absent (généré par la CI : deploy/setup_env_prod.sh)"; fi
 [ -f "$COMPOSE_FILE" ] && ok "$COMPOSE_FILE présent" || fail "$COMPOSE_FILE absent"
 
-env_value() { grep -E "^$1=" .env 2>/dev/null | tail -1 | cut -d= -f2-; }
-for var in DOMAIN LETSENCRYPT_EMAIL IMAGE DJANGO_SECRET_KEY DATABASE_URL; do
+# Valeur d'une variable du .env, sans les guillemets simples ajoutés par le workflow.
+env_value() { grep -E "^$1=" .env 2>/dev/null | tail -1 | cut -d= -f2- | sed -E "s/^'(.*)'$/\1/"; }
+for var in IMAGE DJANGO_SECRET_KEY DJANGO_ALLOWED_HOSTS POSTGRES_DB POSTGRES_USER POSTGRES_PASSWORD POSTGRES_HOST; do
     value="$(env_value "$var")"
     if [ -z "$value" ] || [[ "$value" == *"<"* ]] || [ "$value" = "a-generer" ]; then
         fail "$var non renseigné dans .env"
     fi
 done
-[ "$(env_value DJANGO_DEBUG)" = "1" ] && fail "DJANGO_DEBUG=1 interdit en production"
-DOMAIN="$(env_value DOMAIN)"
+case "$(env_value DJANGO_DEBUG | tr '[:upper:]' '[:lower:]')" in
+    1|true|yes|on) fail "DJANGO_DEBUG activé : interdit en production" ;;
+esac
 
 # --- Infrastructure partagée ---
 if docker network inspect net >/dev/null 2>&1; then ok "réseau externe 'net' présent"; else fail "réseau 'net' absent"; fi
@@ -38,7 +40,10 @@ acme="$(running_with_image 'acme-companion|letsencrypt-nginx-proxy-companion')"
 [ -n "$proxy" ] && ok "nginx-proxy actif ($proxy)" || fail "nginx-proxy introuvable ou arrêté"
 [ -n "$acme" ]  && ok "acme-companion actif ($acme)" || fail "acme-companion introuvable ou arrêté"
 
-# --- Compose : nom de projet et ports ---
+# --- Compose : nom de projet, ports, domaine ---
+DOMAIN=""
+# Valeur d'une variable d'environnement du service, telle que Compose la résout (compose + .env).
+service_env() { printf '%s\n' "$config" | sed -n "s/^ *$1: //p" | head -1 | sed -E 's/^"(.*)"$/\1/'; }
 if config="$(docker compose -f "$COMPOSE_FILE" config 2>&1)"; then
     name="$(printf '%s\n' "$config" | sed -n 's/^name: //p' | head -1)"
     [ "$name" = "$PROJECT" ] && ok "nom de projet Compose : $name" || fail "nom de projet Compose '$name' (attendu : $PROJECT)"
@@ -46,6 +51,24 @@ if config="$(docker compose -f "$COMPOSE_FILE" config 2>&1)"; then
         fail "un port est publié sur l'hôte (interdit sur le serveur partagé)"
     else
         ok "aucun port publié sur l'hôte"
+    fi
+
+    DOMAIN="$(service_env VIRTUAL_HOST)"
+    vport="$(service_env VIRTUAL_PORT)"; port="$(service_env PORT)"
+    [ -n "$DOMAIN" ] && ok "VIRTUAL_HOST : $DOMAIN" || fail "VIRTUAL_HOST absent du service"
+    [ -n "$(service_env LETSENCRYPT_HOST)" ] && [ -n "$(service_env LETSENCRYPT_EMAIL)" ] \
+        && ok "LETSENCRYPT_HOST et LETSENCRYPT_EMAIL définis" || fail "LETSENCRYPT_HOST ou LETSENCRYPT_EMAIL absent"
+    # nginx-proxy envoie le trafic sur VIRTUAL_PORT : gunicorn doit écouter sur ce même port.
+    if [ -n "$vport" ] && [ "$vport" = "${port:-8000}" ]; then
+        ok "gunicorn écoute sur VIRTUAL_PORT ($vport)"
+    else
+        fail "VIRTUAL_PORT ($vport) différent de PORT (${port:-8000 par défaut}) : nginx-proxy répondrait 502"
+    fi
+    allowed="$(service_env DJANGO_ALLOWED_HOSTS)"
+    if [ -n "$DOMAIN" ] && printf '%s' "$allowed" | tr ',' '\n' | grep -qxF "$DOMAIN"; then
+        ok "DJANGO_ALLOWED_HOSTS contient $DOMAIN"
+    else
+        fail "DJANGO_ALLOWED_HOSTS ($allowed) ne contient pas $DOMAIN : Django répondrait 400"
     fi
 else
     fail "docker compose config échoue : $config"

@@ -2,9 +2,10 @@ import os
 from datetime import timedelta
 from pathlib import Path
 
-import dj_database_url
 from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
+
+from .env import env_bool, env_database, env_list, env_pair
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -12,12 +13,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
 
 
-def env_list(name, default=""):
-    return [v.strip() for v in os.environ.get(name, default).split(",") if v.strip()]
-
-
 # DEBUG est désactivé par défaut : il faut DJANGO_DEBUG=1 (dans backend/.env) pour le développement.
-DEBUG = os.environ.get("DJANGO_DEBUG", "0") == "1"
+DEBUG = env_bool("DJANGO_DEBUG", False)
 
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "")
 if not SECRET_KEY:
@@ -26,7 +23,7 @@ if not SECRET_KEY:
     SECRET_KEY = "dev-only-insecure-key-change-me-in-production-please"
 
 # localhost reste autorisé pour le healthcheck Docker, qui appelle l'API depuis le conteneur.
-ALLOWED_HOSTS = [*env_list("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1"), "localhost", "127.0.0.1"]
+ALLOWED_HOSTS = list(dict.fromkeys([*env_list("DJANGO_ALLOWED_HOSTS"), "localhost", "127.0.0.1"]))
 CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS")
 
 INSTALLED_APPS = [
@@ -74,11 +71,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
-if not os.environ.get("DATABASE_URL"):
-    raise ImproperlyConfigured(
-        "DATABASE_URL manquant : copier backend/.env.example vers backend/.env et le renseigner."
-    )
-DATABASES = {"default": dj_database_url.config(conn_max_age=60)}
+DATABASES = {"default": env_database()}
 # Dans Docker, "localhost" désigne le conteneur : docker-compose fournit l'hôte à utiliser.
 if os.environ.get("DATABASE_HOST"):
     DATABASES["default"]["HOST"] = os.environ["DATABASE_HOST"]
@@ -127,7 +120,7 @@ WHITENOISE_IMMUTABLE_FILE_TEST = _whitenoise_immutable
 
 # Photos de profil servies par Django. Suffisant pour un projet de démonstration ;
 # à plus grande échelle, on passerait par un stockage objet (S3, Scaleway Object Storage).
-SERVE_MEDIA = DEBUG or os.environ.get("SERVE_MEDIA", "1") == "1"
+SERVE_MEDIA = DEBUG or env_bool("SERVE_MEDIA", True)
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 AUTH_USER_MODEL = "accounts.User"
@@ -148,12 +141,19 @@ SIMPLE_JWT = {
 
 CORS_ALLOWED_ORIGINS = env_list("CORS_ALLOWED_ORIGINS", "http://localhost:5173")
 
-# Derrière nginx-proxy : TLS terminé par le proxy, qui transmet X-Forwarded-Proto.
-# La redirection HTTP -> HTTPS et HSTS sont déjà assurés par nginx-proxy.
-if not DEBUG:
-    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
+# --- Sécurité HTTPS, pilotée par le .env (voir deploy/setup_env_prod.sh) ---
+# Valeurs par défaut : sûres en production, neutres en développement (DEBUG=1).
+# Derrière nginx-proxy, le TLS est terminé par le proxy, qui transmet X-Forwarded-Proto.
+SECURE_PROXY_SSL_HEADER = env_pair(
+    "SECURE_PROXY_SSL_HEADER", None if DEBUG else ("HTTP_X_FORWARDED_PROTO", "https")
+)
+SECURE_SSL_REDIRECT = env_bool("SECURE_SSL_REDIRECT", False)
+# Le healthcheck Docker appelle l'API en HTTP depuis le conteneur, sans passer par le proxy :
+# le rediriger vers HTTPS le ferait échouer.
+SECURE_REDIRECT_EXEMPT = [r"^api/health/$"]
+SESSION_COOKIE_SECURE = env_bool("SESSION_COOKIE_SECURE", not DEBUG)
+CSRF_COOKIE_SECURE = env_bool("CSRF_COOKIE_SECURE", not DEBUG)
+SECURE_CONTENT_TYPE_NOSNIFF = env_bool("SECURE_CONTENT_TYPE_NOSNIFF", True)
 
 LOGGING = {
     "version": 1,
