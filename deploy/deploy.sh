@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-# Déploiement (lancé par GitHub Actions, ou à la main sur le serveur).
-# Ne touche qu'aux ressources du projet mini-ats. Le .env est généré par la CI (deploy/setup_env_prod.sh).
+# Déploiement (CI ou à la main sur le serveur).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -11,9 +10,7 @@ bash deploy/precheck.sh
 
 $COMPOSE pull
 
-# Vérifie la base avec la NOUVELLE image, sur le réseau `net` et avec le vrai .env, AVANT de
-# remplacer le conteneur en service : en cas d'échec, la version en ligne continue de tourner.
-# VIRTUAL_HOST vide : nginx-proxy ignore ce conteneur temporaire et ne lui envoie aucun trafic.
+# Test de la base avant de remplacer le conteneur. VIRTUAL_HOST vide : ignoré par nginx-proxy.
 echo "Vérification de la connexion à la base…"
 if ! $COMPOSE run --rm --no-deps -T \
         -e VIRTUAL_HOST= -e LETSENCRYPT_HOST= \
@@ -38,14 +35,13 @@ fi
 
 $COMPOSE up -d --remove-orphans
 
-# Attend le healthcheck de l'image (migrations comprises) avant de déclarer le déploiement réussi.
 container="$($COMPOSE ps -q "$SERVICE")"
 echo "Attente du healthcheck…"
 for _ in $(seq 1 30); do
     status="$(docker inspect -f '{{.State.Health.Status}}' "$container" 2>/dev/null || echo starting)"
     if [ "$status" = "healthy" ]; then
         echo "Conteneur sain."
-        docker image prune -f >/dev/null  # images « dangling » uniquement, jamais celles des autres projets
+        docker image prune -f >/dev/null
         exit 0
     fi
     [ "$status" = "unhealthy" ] && break

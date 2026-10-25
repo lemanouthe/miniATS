@@ -14,7 +14,6 @@ def test_secrets_are_masked(settings):
     output = run()
     assert "super-secret-value" not in output
     assert "supe… (29 caractères)" in output
-    # Le vrai mot de passe de la base (celui du .env ou de la CI) ne doit jamais apparaître.
     password = settings.DATABASES["default"].get("PASSWORD")
     assert password, "les tests tournent avec une base protégée par mot de passe"
     db_line = next(line for line in output.splitlines() if "DATABASE_URL" in line)

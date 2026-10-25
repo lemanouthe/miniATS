@@ -7,7 +7,6 @@ from django.db import models
 
 
 def avatar_upload_to(instance, filename):
-    # Nom aléatoire : évite les collisions et le cache navigateur d'une ancienne photo.
     return f"avatars/{instance.pk}/{uuid.uuid4().hex}{Path(filename).suffix.lower()}"
 
 
@@ -41,12 +40,6 @@ class UserManager(BaseUserManager):
 
 
 class User(AbstractUser):
-    """Utilisateur identifié par son e-mail plutôt que par un username.
-
-    Hérite d'AbstractUser : password, first_name, last_name, is_active,
-    is_staff, is_superuser, last_login, date_joined, groupes et permissions.
-    """
-
     username = None
     email = models.EmailField("adresse e-mail", unique=True)
     avatar = models.ImageField("photo", upload_to=avatar_upload_to, blank=True)

@@ -17,9 +17,8 @@ export default function AvatarUploader({ user }) {
 
   const onFile = (e) => {
     const file = e.target.files?.[0];
-    e.target.value = ""; // permet de resélectionner le même fichier
+    e.target.value = "";
     if (!file) return;
-    // Vérification côté client pour un retour immédiat ; le serveur revalide.
     if (!ACCEPTED.includes(file.type)) return notify("Format accepté : JPG, PNG, WebP ou GIF.", "error");
     if (file.size > MAX_SIZE) return notify("La photo ne doit pas dépasser 2 Mo.", "error");
     upload.mutate(file, {

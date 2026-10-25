@@ -1,5 +1,4 @@
-# Image de production : une seule image sert l'API, l'admin et le front React.
-# Build : docker build -t mini-ats .   (contexte = racine du dépôt)
+# Image de production : API + admin + front
 
 # --- 1. Build du front -------------------------------------------------------
 FROM node:22-alpine AS frontend
@@ -7,7 +6,6 @@ WORKDIR /frontend
 COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci
 COPY frontend/ ./
-# Même domaine que l'API : URL relative, donc pas de CORS et rien à changer d'un environnement à l'autre.
 ENV VITE_API_URL=/api
 RUN npm run build
 
@@ -21,7 +19,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-# UID 1000 = propriétaire habituel du dossier ./media monté depuis l'hôte (utilisateur ubuntu).
+# UID 1000 : propriétaire de ./media sur le serveur
 RUN useradd --uid 1000 --create-home --shell /usr/sbin/nologin app
 
 COPY backend/requirements.txt .
@@ -31,7 +29,6 @@ COPY backend/ .
 COPY --from=frontend /frontend/dist ${FRONTEND_DIST}
 COPY deploy/entrypoint.sh /entrypoint.sh
 
-# collectstatic n'a pas besoin de la vraie base ni de la vraie clé : valeurs factices le temps du build.
 RUN DJANGO_SECRET_KEY=build-only DATABASE_URL=sqlite:////tmp/build.sqlite3 \
         python manage.py collectstatic --noinput \
     && mkdir -p /app/media \
@@ -39,7 +36,6 @@ RUN DJANGO_SECRET_KEY=build-only DATABASE_URL=sqlite:////tmp/build.sqlite3 \
     && chmod +x /entrypoint.sh
 
 USER app
-# Port par défaut ; en production, PORT est fixé dans docker-compose.prod.yml (= VIRTUAL_PORT).
 EXPOSE 8000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \

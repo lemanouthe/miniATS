@@ -1,4 +1,3 @@
-"""Lecture typée des variables d'environnement pour settings.py."""
 import os
 
 from django.core.exceptions import ImproperlyConfigured
@@ -8,12 +7,10 @@ FALSE_VALUES = {"0", "false", "no", "off"}
 
 
 def env_list(name, default=""):
-    """'a, b,c' -> ['a', 'b', 'c']"""
     return [v.strip() for v in os.environ.get(name, default).split(",") if v.strip()]
 
 
 def env_bool(name, default):
-    """True/False, 1/0, yes/no, on/off (insensible à la casse). Absente ou vide : default."""
     raw = os.environ.get(name, "").strip().lower()
     if not raw:
         return default
@@ -25,7 +22,6 @@ def env_bool(name, default):
 
 
 def env_pair(name, default):
-    """'HTTP_X_FORWARDED_PROTO,https' -> ('HTTP_X_FORWARDED_PROTO', 'https'). 'none' -> None."""
     raw = os.environ.get(name, "").strip()
     if not raw:
         return default
@@ -38,7 +34,6 @@ def env_pair(name, default):
 
 
 def env_database():
-    """Configuration de la base : DATABASE_URL (développement) ou POSTGRES_* (production)."""
     import dj_database_url
 
     if os.environ.get("DATABASE_URL"):

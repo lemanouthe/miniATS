@@ -21,7 +21,7 @@ export default function ProfileForm({ user, onSubmit }) {
   const submit = async (values) => {
     try {
       const updated = await onSubmit(values);
-      reset(toFormValues(updated)); // le formulaire redevient « propre » après enregistrement
+      reset(toFormValues(updated));
     } catch (e) {
       const data = e.response?.data;
       if (!data || typeof data !== "object") {

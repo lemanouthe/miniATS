@@ -4,7 +4,6 @@ from .models import Application
 
 
 class ApplicationSerializer(serializers.ModelSerializer):
-    # owner n'est volontairement pas exposé : il est affecté dans la vue.
     class Meta:
         model = Application
         fields = [

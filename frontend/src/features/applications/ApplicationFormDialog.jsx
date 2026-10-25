@@ -3,7 +3,6 @@ import ApplicationForm from "./ApplicationForm";
 import { useCreateApplication, useUpdateApplication } from "./hooks";
 import { useNotify } from "../../components/Notifications";
 
-// Création si `application` est absent, édition sinon.
 export default function ApplicationFormDialog({ open, onClose, application, onCreated }) {
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down("sm"));
@@ -28,7 +27,6 @@ export default function ApplicationFormDialog({ open, onClose, application, onCr
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm" fullScreen={fullScreen}>
       <DialogTitle>{isEdit ? "Modifier la candidature" : "Nouvelle candidature"}</DialogTitle>
       <DialogContent>
-        {/* key : remonte le formulaire à chaque ouverture pour repartir des bonnes valeurs. */}
         {open && (
           <ApplicationForm
             key={application?.id ?? "new"}

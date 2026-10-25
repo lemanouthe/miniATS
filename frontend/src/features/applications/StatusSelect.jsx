@@ -4,7 +4,6 @@ import StatusChip from "./StatusChip";
 import { useUpdateStatus } from "./hooks";
 import { useNotify } from "../../components/Notifications";
 
-// Select compact qui affiche le statut sous forme de Chip et le modifie en un clic.
 export default function StatusSelect({ application }) {
   const updateStatus = useUpdateStatus();
   const notify = useNotify();

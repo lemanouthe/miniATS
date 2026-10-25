@@ -8,7 +8,7 @@ export const STATUSES = [
 
 export const STATUS_BY_VALUE = Object.fromEntries(STATUSES.map((s) => [s.value, s]));
 
-// Doit rester aligné sur REST_FRAMEWORK["PAGE_SIZE"] côté Django.
+// = PAGE_SIZE côté Django
 export const PAGE_SIZE = 10;
 
 export const formatDate = (iso) =>

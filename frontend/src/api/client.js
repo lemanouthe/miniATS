@@ -3,7 +3,6 @@ import axios from "axios";
 const baseURL = import.meta.env.VITE_API_URL ?? "http://localhost:8000/api";
 
 export const api = axios.create({ baseURL });
-// Client séparé, sans intercepteurs : un refresh qui échoue ne doit pas relancer un refresh.
 export const refreshClient = axios.create({ baseURL });
 
 export const tokenStorage = {
@@ -30,8 +29,7 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Une seule promesse de refresh partagée : si plusieurs requêtes reçoivent un 401
-// en même temps, elles attendent toutes le même refresh au lieu d'en lancer un chacune.
+// un seul refresh pour plusieurs 401 simultanés
 let refreshPromise = null;
 
 api.interceptors.response.use(
@@ -50,7 +48,6 @@ api.interceptors.response.use(
     try {
       refreshPromise ??= refreshClient
         .post("/auth/token/refresh/", { refresh: tokenStorage.refresh })
-        // Stocke aussi le refresh s'il est renvoyé (ROTATE_REFRESH_TOKENS activé).
         .then((r) => tokenStorage.set(r.data))
         .finally(() => { refreshPromise = null; });
       await refreshPromise;

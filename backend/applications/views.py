@@ -14,7 +14,6 @@ class ApplicationViewSet(viewsets.ModelViewSet):
     ordering_fields = ["applied_at", "created_at", "company", "status"]
 
     def get_queryset(self):
-        # Filtrer ici garantit un 404 (et non un 403) sur l'objet d'un autre utilisateur.
         return Application.objects.filter(owner=self.request.user)
 
     def perform_create(self, serializer):

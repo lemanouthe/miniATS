@@ -26,7 +26,6 @@ class UserSerializer(serializers.ModelSerializer):
         if "avatar" in validated_data and validated_data["avatar"] is None:
             validated_data["avatar"] = ""
         user = super().update(instance, validated_data)
-        # Supprime l'ancien fichier quand la photo est remplacée ou retirée.
         if old_avatar and old_avatar != user.avatar.name:
             user.avatar.storage.delete(old_avatar)
         return user

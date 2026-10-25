@@ -1,5 +1,4 @@
-# Mini ATS : commandes courantes. `make` ou `make help` pour la liste.
-# Le venv partagé est dans le dossier parent ; surcharger avec `make VENV=/autre/venv ...`.
+# make help : liste des commandes
 
 VENV    ?= $(abspath ../venv)
 PYTHON  := $(VENV)/bin/python
@@ -97,7 +96,6 @@ docker-test: ## Lance les tests back dans le conteneur
 	docker compose exec api pytest
 
 # --- Production -----------------------------------------------------------
-# Le déploiement réel passe par GitHub Actions (voir deploy/README.md).
 
 prod-build: ## Construit l'image de production (API + front) en local
 	docker build -t mini-ats:local .

@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-# Vérifications avant déploiement sur le serveur partagé. Sortie non nulle = ne pas déployer.
-# Usage (sur le serveur) : cd ~/projects/miniAts && bash deploy/precheck.sh
+# Vérifications avant déploiement. Sortie non nulle = ne pas déployer.
 set -uo pipefail
 cd "$(dirname "$0")/.."
 
@@ -19,7 +18,6 @@ echo "Precheck $PROJECT"
 if [ -f .env ]; then ok ".env présent"; else fail ".env absent (généré par la CI : deploy/setup_env_prod.sh)"; fi
 [ -f "$COMPOSE_FILE" ] && ok "$COMPOSE_FILE présent" || fail "$COMPOSE_FILE absent"
 
-# Valeur d'une variable du .env, sans les guillemets simples ajoutés par le workflow.
 env_value() { grep -E "^$1=" .env 2>/dev/null | tail -1 | cut -d= -f2- | sed -E "s/^'(.*)'$/\1/"; }
 for var in IMAGE DJANGO_SECRET_KEY DJANGO_ALLOWED_HOSTS POSTGRES_DB POSTGRES_USER POSTGRES_PASSWORD POSTGRES_HOST; do
     value="$(env_value "$var")"
@@ -42,7 +40,6 @@ acme="$(running_with_image 'acme-companion|letsencrypt-nginx-proxy-companion')"
 
 # --- Compose : nom de projet, ports, domaine ---
 DOMAIN=""
-# Valeur d'une variable d'environnement du service, telle que Compose la résout (compose + .env).
 service_env() { printf '%s\n' "$config" | sed -n "s/^ *$1: //p" | head -1 | sed -E 's/^"(.*)"$/\1/'; }
 if config="$(docker compose -f "$COMPOSE_FILE" config 2>&1)"; then
     name="$(printf '%s\n' "$config" | sed -n 's/^name: //p' | head -1)"
@@ -58,7 +55,6 @@ if config="$(docker compose -f "$COMPOSE_FILE" config 2>&1)"; then
     [ -n "$DOMAIN" ] && ok "VIRTUAL_HOST : $DOMAIN" || fail "VIRTUAL_HOST absent du service"
     [ -n "$(service_env LETSENCRYPT_HOST)" ] && [ -n "$(service_env LETSENCRYPT_EMAIL)" ] \
         && ok "LETSENCRYPT_HOST et LETSENCRYPT_EMAIL définis" || fail "LETSENCRYPT_HOST ou LETSENCRYPT_EMAIL absent"
-    # nginx-proxy envoie le trafic sur VIRTUAL_PORT : gunicorn doit écouter sur ce même port.
     if [ -n "$vport" ] && [ "$vport" = "${port:-8000}" ]; then
         ok "gunicorn écoute sur VIRTUAL_PORT ($vport)"
     else

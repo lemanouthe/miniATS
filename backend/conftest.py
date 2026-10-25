@@ -1,7 +1,3 @@
-"""Données et fixtures de test partagées par toutes les apps.
-
-Toutes les données de test sont définies ici : pour les changer, c'est le seul fichier à modifier.
-"""
 import io
 
 import pytest
@@ -30,7 +26,6 @@ APPLICATION_DATA = {"company": "Zenith", "position": "Dev full stack"}
 
 @pytest.fixture(autouse=True)
 def media_root(settings, tmp_path):
-    """Les fichiers envoyés pendant les tests ne polluent jamais backend/media."""
     settings.MEDIA_ROOT = tmp_path
     return tmp_path
 
@@ -59,7 +54,6 @@ def api_client(user):
 
 @pytest.fixture
 def make_application(user):
-    """Fabrique de candidatures : make_application(company="X", status="offer", owner=...)."""
     def make(**overrides):
         return Application.objects.create(**{"owner": user, **APPLICATION_DATA, **overrides})
     return make
@@ -67,7 +61,6 @@ def make_application(user):
 
 @pytest.fixture
 def make_image():
-    """Fabrique d'images PNG valides pour tester l'envoi de photo."""
     def make(name="photo.png", size=(10, 10)):
         buf = io.BytesIO()
         Image.new("RGB", size, "blue").save(buf, format="PNG")

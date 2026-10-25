@@ -7,7 +7,7 @@ const EMPTY = {
   job_url: "", applied_at: "", notes: "",
 };
 
-// L'API renvoie null pour les champs vides ; un TextField contrôlé attend "".
+// null (API) -> "" (TextField contrôlé)
 const toFormValues = (data = {}) =>
   Object.fromEntries(Object.entries(EMPTY).map(([k, v]) => [k, data[k] ?? v]));
 
@@ -29,10 +29,6 @@ const FIELD_OPTIONS = {
   notes: { label: "Notes", mui: { multiline: true, minRows: 3 } },
 };
 
-/**
- * onSubmit doit renvoyer une promesse (mutateAsync) : c'est son rejet
- * qui permet d'afficher les erreurs de validation renvoyées par DRF.
- */
 export default function ApplicationForm({ defaultValues, onSubmit, onCancel, submitLabel = "Enregistrer" }) {
   const { control, handleSubmit, setError, formState: { errors, isSubmitting } } = useForm({
     defaultValues: toFormValues(defaultValues),
@@ -49,7 +45,6 @@ export default function ApplicationForm({ defaultValues, onSubmit, onCancel, sub
       }
       Object.entries(data).forEach(([name, msgs]) => {
         const message = [].concat(msgs).join(" ");
-        // non_field_errors, detail… : pas de champ correspondant, on les affiche en haut.
         setError(name in EMPTY ? name : "root", { message });
       });
     }

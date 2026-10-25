@@ -19,7 +19,6 @@ class UserEditForm(UserChangeForm):
 
 @admin.register(User)
 class UserAdmin(BaseUserAdmin):
-    # Le UserAdmin de Django suppose un champ username : on remplace ses fieldsets.
     form = UserEditForm
     add_form = UserCreateForm
     list_display = ["email", "first_name", "last_name", "is_staff", "is_active"]

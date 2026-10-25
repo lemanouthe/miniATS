@@ -54,13 +54,11 @@ def test_ssl_redirect_sends_http_to_https(db, ssl_redirect):
 
 
 def test_ssl_redirect_accepts_requests_forwarded_as_https(db, ssl_redirect):
-    # Requête arrivée en HTTPS chez nginx-proxy : pas de redirection (401 car non authentifié).
     res = APIClient().get("/api/applications/", HTTP_X_FORWARDED_PROTO="https")
     assert res.status_code == 401
 
 
 def test_healthcheck_is_exempt_from_ssl_redirect(db, ssl_redirect):
-    # Le healthcheck Docker appelle l'API en HTTP depuis le conteneur.
     assert APIClient().get("/api/health/").status_code == 200
 
 

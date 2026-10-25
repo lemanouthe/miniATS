@@ -5,7 +5,6 @@ export const obtainToken = (email, password) =>
 export const getMe = () => api.get("/auth/me/").then((r) => r.data);
 export const updateMe = (data) => api.patch("/auth/me/", data).then((r) => r.data);
 
-// FormData : axios envoie alors la requête en multipart avec la bonne frontière.
 export const uploadAvatar = (file) => {
   const body = new FormData();
   body.append("avatar", file);

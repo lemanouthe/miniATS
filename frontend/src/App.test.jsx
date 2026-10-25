@@ -94,7 +94,6 @@ describe("parcours applicatif", () => {
     await userEvent.click(await screen.findByRole("combobox", { name: `Statut de ${rowLabel(minimal)}` }));
     await userEvent.click(await screen.findByRole("option", { name: STATUS_BY_VALUE.offer.label }));
 
-    // Mis à jour avant même la réponse du serveur.
     const row = screen.getByText(minimal.position).closest("tr");
     expect(within(row).getByText(STATUS_BY_VALUE.offer.label)).toBeInTheDocument();
     expect(api.updateApplication.mock.calls[0][0]).toEqual({ id: minimal.id, status: "offer" });

@@ -20,5 +20,5 @@ urlpatterns = [
 if settings.SERVE_MEDIA:
     urlpatterns += [re_path(r"^media/(?P<path>.*)$", serve, {"document_root": settings.MEDIA_ROOT})]
 
-# En dernier : toute autre URL (hors API, admin, fichiers) est une route du front React.
+# routes du front React
 urlpatterns += [re_path(r"^(?!api/|admin/|static/|media/).*$", spa_index)]

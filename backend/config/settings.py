@@ -9,11 +9,9 @@ from .env import env_bool, env_database, env_list, env_pair
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Les variables déjà définies (CI, docker-compose) restent prioritaires sur le fichier .env.
 load_dotenv(BASE_DIR / ".env")
 
 
-# DEBUG est désactivé par défaut : il faut DJANGO_DEBUG=1 (dans backend/.env) pour le développement.
 DEBUG = env_bool("DJANGO_DEBUG", False)
 
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "")
@@ -22,7 +20,7 @@ if not SECRET_KEY:
         raise ImproperlyConfigured("DJANGO_SECRET_KEY est obligatoire quand DJANGO_DEBUG vaut 0.")
     SECRET_KEY = "dev-only-insecure-key-change-me-in-production-please"
 
-# localhost reste autorisé pour le healthcheck Docker, qui appelle l'API depuis le conteneur.
+# localhost : healthcheck Docker
 ALLOWED_HOSTS = list(dict.fromkeys([*env_list("DJANGO_ALLOWED_HOSTS"), "localhost", "127.0.0.1"]))
 CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS")
 
@@ -72,7 +70,7 @@ TEMPLATES = [
 WSGI_APPLICATION = "config.wsgi.application"
 
 DATABASES = {"default": env_database()}
-# Dans Docker, "localhost" désigne le conteneur : docker-compose fournit l'hôte à utiliser.
+# docker-compose de dev
 if os.environ.get("DATABASE_HOST"):
     DATABASES["default"]["HOST"] = os.environ["DATABASE_HOST"]
 
@@ -93,7 +91,6 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
-# Fichiers statiques (admin) servis par WhiteNoise, compressés et versionnés en production.
 STORAGES = {
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
     "staticfiles": {
@@ -103,23 +100,19 @@ STORAGES = {
     },
 }
 
-# Build du front (frontend/dist), copié dans l'image Docker : Django sert l'application React
-# sur le même domaine que l'API. Absent en développement, où Vite sert le front.
+# Front buildé, présent uniquement dans l'image Docker
 FRONTEND_DIST = Path(os.environ.get("FRONTEND_DIST", BASE_DIR / "frontend_dist"))
 if FRONTEND_DIST.is_dir():
     WHITENOISE_ROOT = FRONTEND_DIST
 
 
 def _whitenoise_immutable(path, url):
-    # Fichiers de Vite (/assets/nom-<hash>.js) : leur nom change à chaque build, cache illimité possible.
+    # assets Vite hashés
     return url.startswith("/assets/")
 
 
 WHITENOISE_IMMUTABLE_FILE_TEST = _whitenoise_immutable
-# index.html n'est jamais servi par WhiteNoise : la vue spa_index le renvoie avec Cache-Control: no-cache.
 
-# Photos de profil servies par Django. Suffisant pour un projet de démonstration ;
-# à plus grande échelle, on passerait par un stockage objet (S3, Scaleway Object Storage).
 SERVE_MEDIA = DEBUG or env_bool("SERVE_MEDIA", True)
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
@@ -141,15 +134,12 @@ SIMPLE_JWT = {
 
 CORS_ALLOWED_ORIGINS = env_list("CORS_ALLOWED_ORIGINS", "http://localhost:5173")
 
-# --- Sécurité HTTPS, pilotée par le .env (voir deploy/setup_env_prod.sh) ---
-# Valeurs par défaut : sûres en production, neutres en développement (DEBUG=1).
-# Derrière nginx-proxy, le TLS est terminé par le proxy, qui transmet X-Forwarded-Proto.
+# --- HTTPS (derrière nginx-proxy) ---
 SECURE_PROXY_SSL_HEADER = env_pair(
     "SECURE_PROXY_SSL_HEADER", None if DEBUG else ("HTTP_X_FORWARDED_PROTO", "https")
 )
 SECURE_SSL_REDIRECT = env_bool("SECURE_SSL_REDIRECT", False)
-# Le healthcheck Docker appelle l'API en HTTP depuis le conteneur, sans passer par le proxy :
-# le rediriger vers HTTPS le ferait échouer.
+# appelé en HTTP par le healthcheck
 SECURE_REDIRECT_EXEMPT = [r"^api/health/$"]
 SESSION_COOKIE_SECURE = env_bool("SESSION_COOKIE_SECURE", not DEBUG)
 CSRF_COOKIE_SECURE = env_bool("CSRF_COOKIE_SECURE", not DEBUG)

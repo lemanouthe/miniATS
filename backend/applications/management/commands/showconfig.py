@@ -1,10 +1,3 @@
-"""Affiche les variables d'environnement du projet, leur source et la valeur effective dans Django.
-
-    python manage.py showconfig            (en local : make config)
-    docker compose -f docker-compose.prod.yml exec mini-ats-api python manage.py showconfig
-
-Les secrets ne sont jamais affichés en clair.
-"""
 import os
 
 from django.conf import settings
@@ -22,7 +15,6 @@ def _database(_):
     return f"{db['ENGINE'].rsplit('.', 1)[-1]}://{user}{db.get('HOST') or ''}:{db.get('PORT') or ''}/{db['NAME']}"
 
 
-# (variable, groupe, lecture de la valeur effective dans settings)
 VARIABLES = [
     ("DJANGO_DEBUG", "Django", lambda s: s.DEBUG),
     ("DJANGO_SECRET_KEY", "Django", lambda s: _mask(s.SECRET_KEY)),
@@ -44,7 +36,7 @@ VARIABLES = [
     ("SECURE_CONTENT_TYPE_NOSNIFF", "Sécurité", lambda s: s.SECURE_CONTENT_TYPE_NOSNIFF),
     ("SERVE_MEDIA", "Fichiers", lambda s: s.SERVE_MEDIA),
     ("FRONTEND_DIST", "Fichiers", lambda s: f"{s.FRONTEND_DIST}{'' if s.FRONTEND_DIST.is_dir() else ' (absent)'}"),
-    # Lues par l'entrypoint Docker, pas par Django.
+    # lues par l'entrypoint
     ("PORT", "Conteneur", lambda s: os.environ.get("PORT", "8000")),
     ("GUNICORN_WORKERS", "Conteneur", lambda s: os.environ.get("GUNICORN_WORKERS", "3")),
     ("SEED_DEMO", "Conteneur", lambda s: os.environ.get("SEED_DEMO", "0")),
@@ -61,8 +53,6 @@ class Command(BaseCommand):
         def source(name):
             if name not in os.environ:
                 return "défaut"
-            # load_dotenv ne remplace pas une variable déjà définie : si les valeurs diffèrent,
-            # c'est l'environnement (CI, docker-compose) qui l'emporte.
             if name in file_values and file_values[name] == os.environ[name]:
                 return ".env"
             return "environnement"

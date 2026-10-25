@@ -28,7 +28,6 @@ export default function ApplicationDetail() {
   const navigate = useNavigate();
   const location = useLocation();
   const notify = useNotify();
-  // Retour à la liste avec les filtres d'origine.
   const backTo = `/applications${location.state?.listSearch ?? ""}`;
 
   const { data: app, isLoading, isError, error, refetch } = useApplication(id);

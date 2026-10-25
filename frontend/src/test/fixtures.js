@@ -1,6 +1,3 @@
-// Données de test partagées par tous les tests du front.
-// Pour les changer, c'est le seul fichier à modifier : les tests lisent ces valeurs au lieu de les recopier.
-
 export const ME = {
   id: 1,
   email: "demo@example.com",
@@ -17,7 +14,7 @@ export const ME = {
 
 export const AVATAR_URL = "http://localhost:8000/media/avatars/1/photo.png";
 
-// La première candidature est complète (notes, lien, date), la seconde a ses champs optionnels vides.
+// complète, puis champs optionnels vides
 export const APPLICATIONS = [
   {
     id: 1,
@@ -45,9 +42,7 @@ export const APPLICATIONS = [
 
 export const TOKENS = { access: "access-token", refresh: "refresh-token" };
 
-// Réponse paginée telle que la renvoie DRF.
 export const listPage = (results = APPLICATIONS) => ({ count: results.length, results });
 
-// Erreur axios avec la réponse du serveur.
 export const apiError = (status, data = {}) =>
   Object.assign(new Error(String(status)), { response: { status, data } });

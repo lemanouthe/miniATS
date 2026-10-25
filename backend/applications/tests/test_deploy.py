@@ -1,4 +1,3 @@
-"""Comportements propres au déploiement : healthcheck et service du front."""
 import pytest
 
 

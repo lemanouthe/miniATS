@@ -32,7 +32,6 @@ export function useUpdateApplication() {
   return useMutation({
     mutationFn: api.updateApplication,
     onSuccess: (updated) => {
-      // La réponse du PATCH est l'objet à jour : inutile de refaire un GET du détail.
       qc.setQueryData(detailKey(updated.id), updated);
       qc.invalidateQueries({ queryKey: [KEY, "list"] });
     },
@@ -44,15 +43,14 @@ export function useDeleteApplication() {
   return useMutation({
     mutationFn: api.deleteApplication,
     onSuccess: (_, id) => {
-      // removeQueries et non invalidate : refetch le détail supprimé donnerait un 404.
+      // pas d'invalidate : le refetch donnerait un 404
       qc.removeQueries({ queryKey: detailKey(id) });
       qc.invalidateQueries({ queryKey: [KEY, "list"] });
     },
   });
 }
 
-// Changement de statut optimiste : l'interface change tout de suite,
-// et revient en arrière si le serveur refuse.
+// mise à jour optimiste du statut
 export function useUpdateStatus() {
   const qc = useQueryClient();
   return useMutation({

@@ -33,7 +33,6 @@ export default function ApplicationsPage() {
   const location = useLocation();
   const notify = useNotify();
 
-  // Les filtres vivent dans l'URL : page partageable, et le bouton retour fonctionne.
   const [searchParams, setSearchParams] = useSearchParams();
   const status = searchParams.get("status") ?? "";
   const search = searchParams.get("search") ?? "";
@@ -44,25 +43,22 @@ export default function ApplicationsPage() {
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
       Object.entries(changes).forEach(([k, v]) => (v ? next.set(k, String(v)) : next.delete(k)));
-      // Changer un filtre ramène en page 1, sinon on peut demander une page qui n'existe plus.
+      // nouveau filtre : retour en page 1
       if (!("page" in changes)) next.delete("page");
       return next;
     }, { replace });
   }, [setSearchParams]);
 
-  // Recherche : saisie locale immédiate, URL mise à jour après 300 ms sans frappe.
-  // replace: true pour ne pas créer une entrée d'historique par caractère.
   const [searchInput, setSearchInput] = useState(search);
   const [syncedSearch, setSyncedSearch] = useState(search);
   if (search !== syncedSearch) {
-    // L'URL a changé de l'extérieur (bouton retour, lien) : on resynchronise le champ.
+    // URL modifiée de l'extérieur (bouton retour)
     setSyncedSearch(search);
     setSearchInput(search);
   }
   const debounceRef = useRef();
   useEffect(() => () => clearTimeout(debounceRef.current), []);
-  // setSearchParams ne met pas ses mises à jour en file : le minuteur doit appeler la version
-  // la plus récente, sinon un filtre changé pendant le délai serait écrasé par la recherche.
+  // le minuteur doit utiliser la dernière version de updateParams
   const updateParamsRef = useRef(updateParams);
   useEffect(() => { updateParamsRef.current = updateParams; }, [updateParams]);
   const onSearchChange = (e) => {
@@ -75,7 +71,6 @@ export default function ApplicationsPage() {
     );
   };
 
-  // Remet la liste dans son état initial : filtres, recherche, tri et page.
   const resetFilters = () => {
     clearTimeout(debounceRef.current);
     setSearchInput("");
@@ -86,7 +81,7 @@ export default function ApplicationsPage() {
   const params = { status: status || undefined, search: search || undefined, ordering, page };
   const { data, isLoading, isError, error, isFetching, refetch } = useApplications(params);
 
-  // DRF répond 404 sur une page hors limites (ex. après suppression du dernier élément).
+  // DRF : 404 sur une page hors limites
   const isOutOfRange = isError && error.response?.status === 404 && page > 1;
   useEffect(() => {
     if (isOutOfRange) updateParams({ page: null }, { replace: true });

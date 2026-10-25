@@ -13,8 +13,7 @@ describe("intercepteur de refresh", () => {
   const originalRefreshAdapter = refreshClient.defaults.adapter;
 
   beforeEach(() => {
-    tokenStorage.set(TOKENS); // l'access de TOKENS est considéré comme expiré
-    // L'API accepte uniquement le token rafraîchi.
+    tokenStorage.set(TOKENS);
     api.defaults.adapter = (config) =>
       config.headers.Authorization === `Bearer ${FRESH}` ? ok(config, { url: config.url }) : unauthorized(config);
   });

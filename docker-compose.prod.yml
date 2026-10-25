@@ -1,16 +1,8 @@
-# Production sur le serveur partagé (derrière nginx-proxy + acme-companion).
-# Lancement : docker compose -f docker-compose.prod.yml up -d   (voir deploy/deploy.sh)
-#
-# Règles de cohabitation :
-# - nom de projet épinglé : ressources préfixées mini-ats-* / mini-ats_* ;
-# - aucun port publié sur l'hôte : nginx-proxy joint le conteneur par le réseau `net` ;
-# - pas de Postgres ici : on utilise celui déjà présent sur le serveur (DATABASE_URL dans .env).
-# Le .env est généré par deploy/setup_env_prod.sh (DJANGO_ALLOWED_HOSTS doit contenir VIRTUAL_HOST).
+# Production, derrière nginx-proxy (réseau net). .env : deploy/setup_env_prod.sh
 name: mini-ats
 
 services:
   mini-ats-api:
-    # Nom de service volontairement unique : sur le réseau partagé `net`, il devient un alias DNS.
     container_name: mini-ats-api
     image: ${IMAGE:?IMAGE manquant dans .env}
     restart: unless-stopped
@@ -25,7 +17,6 @@ services:
     volumes:
       - ./media:/app/media
     extra_hosts:
-      # Permet DATABASE_URL=...@host.docker.internal:5432/... si Postgres écoute sur l'hôte.
       - "host.docker.internal:host-gateway"
     networks:
       - net

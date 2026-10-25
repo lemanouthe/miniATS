@@ -24,7 +24,6 @@ export function AuthProvider({ children }) {
 
   const logout = useCallback(() => {
     tokenStorage.clear();
-    // Sans ça, l'utilisateur suivant verrait brièvement les données en cache du précédent.
     queryClient.clear();
     setIsAuthenticated(false);
   }, [queryClient]);

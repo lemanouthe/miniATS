@@ -40,7 +40,6 @@ export default function ProfilePage() {
         <Grid size={{ xs: 12, md: 8 }}>
           <Card variant="outlined">
             <CardContent sx={{ p: { xs: 2, sm: 4 } }}>
-              {/* key : repart des valeurs serveur si le profil est rechargé. */}
               {user ? <ProfileForm key={user.id} user={user} onSubmit={onSubmit} /> : <Skeleton variant="rectangular" height={360} />}
             </CardContent>
           </Card>

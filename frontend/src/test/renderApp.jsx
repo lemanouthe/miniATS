@@ -7,7 +7,6 @@ import { AuthProvider } from "../auth/AuthContext";
 import { NotificationsProvider } from "../components/Notifications";
 import { theme } from "../theme";
 
-// Monte l'application complète (mêmes providers que main.jsx) sur la route demandée.
 export function renderApp(path = "/applications") {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
